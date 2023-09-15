@@ -10,11 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.modelmapper.TypeToken;
+import org.springframework.web.client.ResourceAccessException;
 
 @RestController
 @RequestMapping(path = "/api/v1/work-orders")
@@ -30,7 +29,7 @@ public class WorkOrderController {
 
     @PostMapping
     public ResponseEntity<Long> createWorkOrder(@RequestBody CreateWorkOrderRequest request) {
-        WorkOrder workOrder = new WorkOrder();
+        var workOrder = new WorkOrder();
         modelMapper.map(request, workOrder);
         workOrder.executeOrder();
         workOrderService.save(workOrder);
@@ -39,7 +38,7 @@ public class WorkOrderController {
 
     @GetMapping
     public ResponseEntity<Iterable<WorkOrderResponse>> findAllOrders() {
-        List<WorkOrder> workOrders = workOrderService.findAll();
+        var workOrders = workOrderService.findAll();
 
         Type listType = new TypeToken<List<WorkOrderResponse>>() {}.getType();
 
@@ -48,20 +47,28 @@ public class WorkOrderController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<WorkOrderResponse> updateOrder(@RequestParam("id") Long id, @RequestBody CreateWorkOrderRequest request) {
-        WorkOrderResponse response = new WorkOrderResponse();
-        Optional<WorkOrder> workOrder = workOrderService.findById(id);
+    @GetMapping("{id}")
+    public  ResponseEntity<WorkOrderResponse> findOrderById(@PathVariable Long id) {
+        var workOrder = workOrderService.findById(id).orElseThrow(() -> new ResourceAccessException("Ordem de serviço não existe" + id));
+        Type responseType = new TypeToken<WorkOrderResponse>() {}.getType();
 
-        modelMapper.map(request, workOrder);
-        modelMapper.map(workOrder, response);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(modelMapper.map(workOrder, responseType));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Long> deleteWorkOrder(@RequestParam("id") Long id) {
-        Optional<WorkOrder> workOrder = workOrderService.findById(id);
-        workOrderService.delete(workOrder.get());
-        return ResponseEntity.ok(workOrder.get().getId());
+    @PutMapping("{id}")
+    public ResponseEntity<WorkOrderResponse> updateOrder(@PathVariable Long id, @RequestBody CreateWorkOrderRequest request) {
+        var workOrder = workOrderService.findById(id).orElseThrow(() -> new ResourceAccessException("Ordem de serviço não existe" + id));
+        modelMapper.map(request, workOrder);
+        workOrderService.save(workOrder);
+        Type responseType = new TypeToken<WorkOrderResponse>() {}.getType();
+
+        return ResponseEntity.ok(modelMapper.map(workOrder, responseType));
+    }
+
+    @DeleteMapping("{id}")
+    public ResponseEntity<Long> deleteWorkOrder(@PathVariable Long id) {
+        var workOrder = workOrderService.findById(id).orElseThrow(() -> new ResourceAccessException("Ordem de serviço não existe" + id));
+        workOrderService.delete(workOrder);
+        return ResponseEntity.ok(workOrder.getId());
     }
 }
