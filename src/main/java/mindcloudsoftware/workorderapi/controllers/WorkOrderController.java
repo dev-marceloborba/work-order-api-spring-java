@@ -39,9 +39,7 @@ public class WorkOrderController {
     @GetMapping
     public ResponseEntity<Iterable<WorkOrderResponse>> findAllOrders() {
         var workOrders = workOrderService.findAll();
-
         Type listType = new TypeToken<List<WorkOrderResponse>>() {}.getType();
-
         List<WorkOrderResponse> response = modelMapper.map(workOrders, listType);
 
         return ResponseEntity.ok(response);
